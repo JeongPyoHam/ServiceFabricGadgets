@@ -2,7 +2,7 @@
 
 int function1();
 int function2();
-int function3();
+int function3(int from, int to);
 
 int main()
 {
@@ -23,15 +23,22 @@ int function1()
 
 int function2()
 {
-    int rv = function3();
+    int from = 1;
+    int to = 10;
+
+    int rv = function3(from, to);
     return rv;
 }
 
-int function3()
+int function3(int from, int to)
 {
+    if (from > to) {
+        return -1;
+    }
+
     int sum = 0;
 
-    for (int i = 1; i <= 10; ++i) {
+    for (int i = from; i <= to; ++i) {
         sum = sum + i;
     }
 
