@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SRCROOT)\properties\service_fabric_native_user_exe.props" />
+  <Import Project="$(SRCROOT)\properties\service_fabric_native_user_test_boost.props" />
+  <Import Project="$(SRCROOT)\properties\service_fabric_native_openssl.props" />
+  <PropertyGroup>
+    <TargetName>AsyncOperationPlay</TargetName>
+    <ProjectGuid>{9b775c0f-8356-4607-a0c3-758cbc2abf61}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SrcRoot)\prod\src\Common\lib\Common.vcxproj">
+      <Project>{f1ca0667-d4df-4176-945b-3d16e225cc9b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricCommon\dll\FabricCommon.vcxproj">
+      <Project>{f1ca0667-d4df-4176-945b-3d16e225cc9b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\resources\dll\FabricResources.vcxproj">
+      <Project>{75fbdf4c-1457-4e5a-a743-0cae63882dcf}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricUUID\FabricUUID.vcxproj">
+      <Project>{35360390-bd49-40fb-a133-3079bd8e230d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\InternalFabricUUID\InternalFabricUUID.vcxproj">
+      <Project>{35360390-bd49-40fb-a133-3079bd8e230d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\shared\serialization\src\user\SerializationUser.vcxproj">
+      <Project>{69da64b3-f3eb-42f1-86f3-ba9df0d12cd1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\ServiceModel\lib\ServiceModel.vcxproj">
+      <Project>{2baf01d8-3992-410b-9485-cb0f59b497ef}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricCommon\dll\FabricCommon.vcxproj">
+      <Project>{f1ca0667-d4df-4176-945b-3d16e225cc9b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricClient\dll\FabricClient.vcxproj">
+      <Project>{44673226-639b-44e8-96e6-8b3aed87719d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricRuntime\dll\FabricRuntime.vcxproj">
+      <Project>{048ad8a2-2a6d-46d3-a950-ef849aebea7a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\src\retail\native\FabricZip\dll\FabricZip.vcxproj">
+      <Project>{ce1ebc9f-b673-4ef1-bf8b-5d367b2f9b56}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SrcRoot)\prod\test\CertTestUtilityLib\lib\CertTestUtilityLib.vcxproj">
+      <Project>{CA8415AA-1BAE-4262-B019-D43F57C79C89}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalDependencies>
+        %(AdditionalDependencies);
+        $(KtlUserLib);
+        strsafe.lib;
+        xmllite.lib;
+        user32.lib;
+        ncrypt.lib;
+        Crypt32.lib;
+        Userenv.lib;
+        uuid.lib;
+        Advapi32.lib;
+        netapi32.lib;
+        Secur32.lib;
+        kernel32.lib;
+        Ws2_32.lib;
+        Dbghelp.lib;
+        User32.lib;
+        Iphlpapi.lib;
+        Shlwapi.lib;
+        version.lib;
+        rpcrt4.lib;
+        KtmW32.lib;
+        ntdll.lib;
+        Shell32.lib;
+        Ole32.lib;
+        wintrust.lib;
+        bcrypt.lib;
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(SRCROOT)\prod\test\BoostUnitTest\btest.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="TestTools.cpp" />
+    <ClCompile Include="Source1.cpp" />
+    <ClCompile Include="Source2.cpp" />
+    <ClCompile Include="Source3.cpp" />
+  </ItemGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>
+        %(PreprocessorDefinitions);
+        K_UseResumable;
+      </PreprocessorDefinitions>
+      <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(ExtendedTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="AfterBuild">
+    <ItemGroup>
+      <BinplaceFiles Include="$(OutputPath)**\*" Exclude="$(OutputPath)**\*.pdb;$(OutputPath)**\*.lib" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BinplaceFiles)" DestinationFolder="$(BinariesBuildTypeArchDirectory)\bin\FabricUnitTests" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
