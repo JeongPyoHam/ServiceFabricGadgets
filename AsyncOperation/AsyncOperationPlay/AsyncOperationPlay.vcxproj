@@ -46,6 +46,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+        %(AdditionalIncludeDirectories);
+        $(SrcRoot)\prod\test\TestCommon\inc;
+      </AdditionalIncludeDirectories>
+    </ClCompile>
     <Link>
       <AdditionalDependencies>
         %(AdditionalDependencies);
@@ -83,9 +89,10 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TestTools.cpp" />
-    <ClCompile Include="Source1.cpp" />
-    <ClCompile Include="Source2.cpp" />
-    <ClCompile Include="Source3.cpp" />
+    <ClCompile Include="BasicAsyncOperation.cpp" />
+    <ClCompile Include="NoExpectedCompletedSynchronously.cpp" />
+    <ClCompile Include="ExpectedCompletedSynchronously.cpp" />
+    <ClCompile Include="Life.cpp" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <ClCompile>

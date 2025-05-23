@@ -9,20 +9,24 @@
 using namespace std;
 using namespace Common;
 
-namespace AsyncOperationPlay
+namespace ExpectedCompletedSynchronously
 {
 
 class LoopedAsyncOperation;
 
-class CallManySyncAsyncOperation
+//
+// An example that doesn't use expectedCompletedSynchronously pattern. Compare with NoExpectedCompletedSynchronously
+//
+class CallManySyncBetterAsyncOperation
     : public AsyncOperation
 {
 public:
-    CallManySyncAsyncOperation(AsyncCallback const & callback, AsyncOperationSPtr const & parent)
+    CallManySyncBetterAsyncOperation(AsyncCallback const& callback, AsyncOperationSPtr const& parent)
         : AsyncOperation(callback, parent)
-    { }
+    {
+    }
 
-    virtual ~CallManySyncAsyncOperation() {}
+    virtual ~CallManySyncBetterAsyncOperation() {}
 
     static ErrorCode End(AsyncOperationSPtr const& operation)
     {
@@ -34,14 +38,21 @@ protected:
     {
         // call 1st async op
         auto firstOp = AsyncOperation::CreateAndStart<CompletedAsyncOperation>(
-            [this](AsyncOperationSPtr const & first) {
-                OnFirstCompleted(first);
+            [this](AsyncOperationSPtr const& first) {
+                OnFirstCompleted(first, false);
             },
             thisSPtr);
+
+        OnFirstCompleted(firstOp, true);
     }
 
-    void OnFirstCompleted(AsyncOperationSPtr const& firstOp)
+    void OnFirstCompleted(AsyncOperationSPtr const& firstOp, bool expectedCompletedSynchronously)
     {
+        if (firstOp->CompletedSynchronously != expectedCompletedSynchronously)
+        {
+            return;
+        }
+
         auto error = CompletedAsyncOperation::End(firstOp);
         if (!error.IsSuccess())
         {
@@ -55,13 +66,20 @@ protected:
         // call 2nd async op
         auto secondOp = AsyncOperation::CreateAndStart<CompletedAsyncOperation>(
             [this](AsyncOperationSPtr const& second) {
-                OnSecondCompleted(second);
+                OnSecondCompleted(second, false);
             },
             thisSPtr);
+
+        OnSecondCompleted(secondOp, true);
     }
 
-    void OnSecondCompleted(AsyncOperationSPtr const& secondOp)
+    void OnSecondCompleted(AsyncOperationSPtr const& secondOp, bool expectedCompletedSynchronously)
     {
+        if (secondOp->CompletedSynchronously != expectedCompletedSynchronously)
+        {
+            return;
+        }
+
         auto error = CompletedAsyncOperation::End(secondOp);
         if (!error.IsSuccess())
         {
@@ -75,13 +93,20 @@ protected:
         // call 3rd async op
         auto thirdOp = AsyncOperation::CreateAndStart<CompletedAsyncOperation>(
             [this](AsyncOperationSPtr const& third) {
-                OnThirdCompleted(third);
+                OnThirdCompleted(third, false);
             },
             thisSPtr);
+
+        OnThirdCompleted(thirdOp, true);
     }
 
-    void OnThirdCompleted(AsyncOperationSPtr const& thirdOp)
+    void OnThirdCompleted(AsyncOperationSPtr const& thirdOp, bool expectedCompletedSynchronously)
     {
+        if (thirdOp->CompletedSynchronously != expectedCompletedSynchronously)
+        {
+            return;
+        }
+
         auto error = CompletedAsyncOperation::End(thirdOp);
 
         // child operation's Parent is thisSPtr
@@ -94,7 +119,13 @@ class TestFixture
 public:
     int count;
 
-    void Callback(AsyncOperationSPtr const& operation) {
+    void Callback(AsyncOperationSPtr const& operation, bool expectedCompletedSynchronously) {
+
+        if (operation->CompletedSynchronously != expectedCompletedSynchronously)
+        {
+            return;
+        }
+
         ErrorCode error = AsyncOperation::End(operation);
         VERIFY_IS_TRUE(error.IsError(ErrorCodeValue::NotImplemented));
 
@@ -103,8 +134,9 @@ public:
             auto basicOp = AsyncOperation::CreateAndStart<LoopedAsyncOperation>(
                 *this,
                 count,
-                std::bind(&TestFixture::Callback, this, placeholders::_1),
+                std::bind(&TestFixture::Callback, this, placeholders::_1, false),
                 AsyncOperationSPtr());
+            Callback(basicOp, true);
         }
     };
 };
@@ -133,7 +165,7 @@ protected:
     int i_;
 };
 
-BOOST_FIXTURE_TEST_SUITE(Source2Suite, TestFixture)
+BOOST_FIXTURE_TEST_SUITE(Source3Suite, TestFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
@@ -144,8 +176,9 @@ BOOST_AUTO_TEST_CASE(Basic)
     auto basicOp = AsyncOperation::CreateAndStart<LoopedAsyncOperation>(
         *this,
         count,
-        std::bind(&TestFixture::Callback, this, placeholders::_1),
+        std::bind(&TestFixture::Callback, this, placeholders::_1,false),
         AsyncOperationSPtr());
+    Callback(basicOp, true);
 }
 
 BOOST_AUTO_TEST_CASE(Unfolded)
@@ -157,7 +190,7 @@ BOOST_AUTO_TEST_CASE(Unfolded)
     ManualResetEvent mre;
 
     // Invoke a AsyncOperation
-    auto operation = AsyncOperation::CreateAndStart<CallManySyncAsyncOperation>(
+    auto operation = AsyncOperation::CreateAndStart<CallManySyncBetterAsyncOperation>(
         [&mre](AsyncOperationSPtr const&) {
             mre.Set();
         },
@@ -169,12 +202,11 @@ BOOST_AUTO_TEST_CASE(Unfolded)
     mre.Wait();
 
     // this error returns to the caller typically.
-    ErrorCode error = CallManySyncAsyncOperation::End(operation);
+    ErrorCode error = CallManySyncBetterAsyncOperation::End(operation);
 
 
     VERIFY_IS_TRUE(error.IsSuccess());
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()
 
