@@ -239,6 +239,78 @@ public:
     std::shared_ptr<TestRootedObject> shared_ptr_obj;
 };
 
+class TestTimerComponent : public std::enable_shared_from_this<TestTimerComponent>
+{
+public:
+    TestTimerComponent()
+    {
+        PrintCurrentThreadId(L"TestTimerComponent ctor");
+    }
+
+    ~TestTimerComponent()
+    {
+        PrintCurrentThreadId(L"TestTimerComponent dtor");
+    }
+
+    void Open()
+    {
+        PrintCurrentThreadId(L"TestTimerComponent::Open");
+
+        isOpen_.store(true);
+    }
+
+    void Close()
+    {
+        PrintCurrentThreadId(L"TestTimerComponent::Close");
+
+        isOpen_.store(false);
+    }
+
+    void StartTimer()
+    {
+        auto thisSPtr = shared_from_this();
+
+        timer_ = Timer::Create(
+            "testtimer",
+
+            // timer callback anonymous method captures this shared_ptr (a.k.a.) thisSPtr;
+            //
+            // the capture guarantees this object alive within the callback
+            [thisSPtr, this](TimerSPtr const& timer)
+            {
+                timer->Cancel();
+
+                // sleep 3000 msec
+                Sleep(3000);
+
+                PrintCurrentThreadId(L"Timer callback");
+
+                this->InstanceMethod();
+            });
+
+        // one shot timer firing after 1000 msec
+        timer_->Change( /* delay */TimeSpan::FromMilliseconds(1000));
+    }
+
+    void InstanceMethod()
+    {
+        PrintCurrentThreadId(L"Inside InstanceMethod");
+
+        bool isOpen = isOpen_.load();
+        if (isOpen)
+        {
+            PrintCurrentThreadId(L"TestTimerComponent is Open");
+        }
+        else
+        {
+            PrintCurrentThreadId(L"TestTimerComponent is Closed");
+        }
+    }
+
+    TimerSPtr timer_;
+    std::atomic<bool> isOpen_;
+};
+
 //
 // The naming scheme uses postfix 'SPtr' for shared_ptr.
 // 'UPtr' for unique_ptr. 'Ptr' for bare pointer.
@@ -505,6 +577,8 @@ BOOST_AUTO_TEST_CASE(RootedObject_Unique_Ptr)
     Sleep(5000);
 }
 
+#if false
+
 BOOST_AUTO_TEST_CASE(RootedObject_Shared_Ptr)
 {
     PrintCurrentThreadId(L"RootedObject_Shared_Ptr");
@@ -519,6 +593,26 @@ BOOST_AUTO_TEST_CASE(RootedObject_Shared_Ptr)
         fabricComponentSPtr->Close();
     }
     PrintCurrentThreadId(L"Outside the scope");
+
+    Sleep(10000);
+}
+
+#endif
+
+BOOST_AUTO_TEST_CASE(TimerObject)
+{
+    PrintCurrentThreadId(L"TimerObject");
+
+    {
+        auto sptr = make_shared<TestTimerComponent>();
+
+        sptr->Open();
+
+        sptr->StartTimer();
+
+        sptr->Close();
+    }
+    PrintCurrentThreadId(L"TimerObject outside block");
 
     Sleep(10000);
 }
